@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Resize canvas to fit the window
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const colors = ['red', 'green', 'blue', 'yellow', 'purple', 'orange', 'cyan', 'pink'];
+        const particles = [];
+        const friction = 0.99; // Friction coefficient
+
+        class Particle {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.vx = (Math.random() - 0.5) * 1;
+                this.vy = (Math.random() - 0.5) * 1;
+                this.radius = 5;
+                this.isColor = colors.includes(type);
+            }
+
+            update() {
+                this.vx *= friction;
+                this.vy *= friction;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Collision detection with walls
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
+                    this.vx = -this.vx;
+                    this.x += this.vx;
+                }
+                if (this.y - this.radius < 0 || this.y + this.radius > canvas.height) {
+                    this.vy = -this.vy;
+                    this.y += this.vy;
+                }
+
+                // Interact with other particles
+                for (let i = 0; i < particles.length; i++) {
+                    const other = particles[i];
+                    if (other === this) continue;
+
+                    this.interact(other);
+                }
+            }
+
+            draw() {
+                if (this.isColor) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = this.type;
+                    ctx.fill();
+                }
+            }
+
+            interact(other) {
+                if (!colors.includes(this.type) || !colors.includes(other.type)) return;
+
+                const dx = other.x - this.x;
+                const dy = other.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                const attraction = 0.01;
+                const repulsion = 0.1;
+                const stableDistance = 50;
+                const ignoreDistance = 100;
+
+                // Specific interactions based on color pairs
+                if ((this.type === 'green' && other.type === 'blue') || (this.type === 'blue' && other.type === 'green')) {
+                    this.vx += attraction * dx / distance;
+                    this.vy += attraction * dy / distance;
+                }
+
+                if ((this.type === 'green' && other.type === 'yellow') || (this.type === 'yellow' && other.type === 'green')) {
+                    if (distance < stableDistance) {
+                        this.vx -= repulsion * dx / distance;
+                        this.vy -= repulsion * dy / distance;
+                    } else if (distance > ignoreDistance) {
+                        this.vx += attraction * dx / distance;
+                        this.vy += attraction * dy / distance;
+                    }
+                }
+
+                if ((this.type === 'blue' && other.type === 'red') || (this.type === 'red' && other.type === 'blue')) {
+                    if (distance < stableDistance) {
+                        this.vx -= repulsion * dx / distance;
+                        this.vy -= repulsion * dy / distance;
+                    } else if (distance > ignoreDistance) {
+                        this.vx += attraction * dx / distance;
+                        this.vy += attraction * dy / distance;
+                    }
+                }
+
+                if ((this.type === 'green' && other.type === 'red') || (this.type === 'red' && other.type === 'green')) {
+                    // No interaction
+                }
+
+                if ((this.type === 'blue' && other.type === 'yellow') || (this.type === 'yellow' && other.type === 'blue')) {
+                    // No interaction
+                }
+
+                // New color interactions
+                if ((this.type === 'purple' && other.type === 'blue') || (this.type === 'blue' && other.type === 'purple')) {
+                    this.vx += attraction * dx / distance;
+                    this.vy += attraction * dy / distance;
+                }
+
+                if ((this.type === 'orange' && other.type === 'red') || (this.type === 'red' && other.type === 'orange')) {
+                    if (distance < stableDistance) {
+                        this.vx -= repulsion * dx / distance;
+                        this.vy -= repulsion * dy / distance;
+                    } else if (distance > ignoreDistance) {
+                        this.vx += attraction * dx / distance;
+                        this.vy += attraction * dy / distance;
+                    }
+                }
+
+                if ((this.type === 'cyan' && other.type === 'green') || (this.type === 'green' && other.type === 'cyan')) {
+                    if (distance < stableDistance) {
+                        this.vx -= repulsion * dx / distance;
+                        this.vy -= repulsion * dy / distance;
+                    } else if (distance > ignoreDistance) {
+                        this.vx += attraction * dx / distance;
+                        this.vy += attraction * dy / distance;
+                    }
+                }
+
+                if ((this.type === 'pink' && other.type === 'yellow') || (this.type === 'yellow' && other.type === 'pink')) {
+                    this.vx += attraction * dx / distance;
+                    this.vy += attraction * dy / distance;
+                }
+            }
+        }
+
+        // Add color particles
+        const numParticles = 1000; // Increase the number of particles
+        for (let i = 0; i < numParticles; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const type = colors[Math.floor(Math.random() * colors.length)];
+            particles.push(new Particle(x, y, type));
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
